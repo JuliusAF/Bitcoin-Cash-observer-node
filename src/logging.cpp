@@ -154,6 +154,7 @@ void BCLog::Logger::PrependTimestampStr(std::string &str) {
 
     const int64_t nTimeMicros = GetTimeMicros();
     std::string tmpStr = FormatISO8601DateTime(nTimeMicros / 1000000);
+    tmpStr += strprintf(" micros:%ld", nTimeMicros);
     if (m_log_time_micros) {
         tmpStr.pop_back(); // pop off the trailing Z
         tmpStr += strprintf(".%06dZ", nTimeMicros % 1000000);
