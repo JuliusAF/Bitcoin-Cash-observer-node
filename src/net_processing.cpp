@@ -1304,11 +1304,11 @@ void PeerLogicValidation::NewPoWValidBlock(
         // but we don't think they have this one, go ahead and announce it.
         if (state.fPreferHeaderAndIDs && !PeerHasHeader(&state, pindex) &&
             PeerHasHeader(&state, pindex->pprev)) {
-            LogPrint(BCLog::NET, "%s sending header-and-ids %s to peer=%d\n",
+            LogPrint(BCLog::NET, "%s not sending header-and-ids %s to peer=%d\n",
                      "PeerLogicValidation::NewPoWValidBlock",
                      hashBlock.ToString(), pnode->GetId());
-            connman->PushMessage(
-                pnode, msgMaker.Make(NetMsgType::CMPCTBLOCK, *pcmpctblock));
+            //connman->PushMessage(
+            //    pnode, msgMaker.Make(NetMsgType::CMPCTBLOCK, *pcmpctblock));
             state.pindexBestHeaderSent = pindex;
         }
     });
@@ -2536,6 +2536,7 @@ static bool ProcessMessage(const Config &config, CNode *pfrom,
         vRecv >> vInv;
         if (vInv.size() > MAX_INV_SZ) {
             LOCK(cs_main);
+            LogPrint(BCLog::NET, "CUSTOM: inventory message too large from: %d with up=%s\n", pfrom->GetId(), pfrom->addr.ToStringIPPort());
             Misbehaving(pfrom, 20, "oversized-inv");
             return error("message inv size() = %u", vInv.size());
         }
@@ -2558,10 +2559,9 @@ static bool ProcessMessage(const Config &config, CNode *pfrom,
             }
 
             bool fAlreadyHave = AlreadyHave(inv);
-            LogPrint(BCLog::NET, "got inv: %s  %s peer=%d\n", inv.ToString(),
-                     fAlreadyHave ? "have" : "new", pfrom->GetId());
 
             if (inv.type == MSG_BLOCK) {
+                LogPrint(BCLog::NET, "CUSTOM: got inventory bhash=%s  %s peer=%d with ipaddr=%s\n", inv.ToString(), fAlreadyHave ? "have" : "new", pfrom->GetId(), pfrom->addr.ToStringIPPort());
                 const BlockHash hash(inv.hash);
                 UpdateBlockAvailability(pfrom->GetId(), hash);
                 if (!fAlreadyHave && !fImporting && !fReindex &&
@@ -3105,6 +3105,10 @@ static bool ProcessMessage(const Config &config, CNode *pfrom,
         CBlockHeaderAndShortTxIDs cmpctblock;
         vRecv >> cmpctblock;
 
+        LogPrint(BCLog::NET, "CUSTOM: got compact block message from peer=%d with ipaddr=%s with bhash=%s and prevhash=%s and timestamp=%u\n",
+            pfrom->GetId(), pfrom->addr.ToStringIPPort(), cmpctblock.header.GetHash().ToString(),
+            cmpctblock.header.hashPrevBlock.ToString(), cmpctblock.header.nTime);
+
         bool received_new_header = false;
 
         {
@@ -3496,6 +3500,8 @@ static bool ProcessMessage(const Config &config, CNode *pfrom,
         headers.resize(nCount);
         for (unsigned int n = 0; n < nCount; n++) {
             vRecv >> headers[n];
+            LogPrint(BCLog::NET, "CUSTOM: got header from peer=%d with ipaddr=%s with bhash=%s and prevhash=%s and timestamp=%u\n", pfrom->GetId(),
+                pfrom->addr.ToStringIPPort(), headers[n].GetHash().ToString(), headers[n].hashPrevBlock.ToString(), headers[n].nTime);
             // Ignore tx count; assume it is 0.
             ReadCompactSize(vRecv);
         }
@@ -4510,10 +4516,10 @@ bool PeerLogicValidation::SendMessages(const Config &config, CNode *pto,
                     if (most_recent_block_hash == pBestIndex->GetBlockHash()) {
                         CBlockHeaderAndShortTxIDs cmpctblock(
                             *most_recent_block);
-                        connman->PushMessage(
-                            pto,
-                            msgMaker.Make(nSendFlags, NetMsgType::CMPCTBLOCK,
-                                          cmpctblock));
+                        //connman->PushMessage(
+                        //    pto,
+                        //    msgMaker.Make(nSendFlags, NetMsgType::CMPCTBLOCK,
+                        //                  cmpctblock));
                         fGotBlockFromCache = true;
                     }
                 }
@@ -4523,9 +4529,9 @@ bool PeerLogicValidation::SendMessages(const Config &config, CNode *pto,
                         ReadBlockFromDisk(block, pBestIndex, consensusParams);
                     assert(ret);
                     CBlockHeaderAndShortTxIDs cmpctblock(block);
-                    connman->PushMessage(
-                        pto, msgMaker.Make(nSendFlags, NetMsgType::CMPCTBLOCK,
-                                           cmpctblock));
+                    //connman->PushMessage(
+                    //    pto, msgMaker.Make(nSendFlags, NetMsgType::CMPCTBLOCK,
+                    //                       cmpctblock));
                 }
                 state.pindexBestHeaderSent = pBestIndex;
             } else if (state.fPreferHeaders) {
@@ -4541,8 +4547,8 @@ bool PeerLogicValidation::SendMessages(const Config &config, CNode *pto,
                              __func__, vHeaders.front().GetHash().ToString(),
                              pto->GetId());
                 }
-                connman->PushMessage(
-                    pto, msgMaker.Make(NetMsgType::HEADERS, vHeaders));
+                //connman->PushMessage(
+                //    pto, msgMaker.Make(NetMsgType::HEADERS, vHeaders));
                 state.pindexBestHeaderSent = pBestIndex;
             } else {
                 fRevertToInv = true;
@@ -4596,7 +4602,7 @@ bool PeerLogicValidation::SendMessages(const Config &config, CNode *pto,
         for (const BlockHash &hash : pto->vInventoryBlockToSend) {
             vInv.emplace_back(MSG_BLOCK, hash);
             if (vInv.size() == MAX_INV_SZ) {
-                connman->PushMessage(pto, msgMaker.Make(NetMsgType::INV, vInv));
+                //connman->PushMessage(pto, msgMaker.Make(NetMsgType::INV, vInv));
                 vInv.clear();
             }
         }
@@ -4606,7 +4612,7 @@ bool PeerLogicValidation::SendMessages(const Config &config, CNode *pto,
         for (const CInv &inv : pto->vInventoryToSend) {
             vInv.push_back(inv);
             if (vInv.size() == MAX_INV_SZ) {
-                connman->PushMessage(pto, msgMaker.Make(NetMsgType::INV, vInv));
+                //connman->PushMessage(pto, msgMaker.Make(NetMsgType::INV, vInv));
                 vInv.clear();
             }
         }
@@ -4661,8 +4667,8 @@ bool PeerLogicValidation::SendMessages(const Config &config, CNode *pto,
                 pto->filterInventoryKnown.insert(txid);
                 vInv.emplace_back(MSG_TX, txid);
                 if (vInv.size() == MAX_INV_SZ) {
-                    connman->PushMessage(pto,
-                                         msgMaker.Make(NetMsgType::INV, vInv));
+                    //connman->PushMessage(pto,
+                    //                     msgMaker.Make(NetMsgType::INV, vInv));
                     vInv.clear();
                 }
             }
@@ -4749,9 +4755,9 @@ bool PeerLogicValidation::SendMessages(const Config &config, CNode *pto,
             }
         }
     }
-    if (!vInv.empty()) {
-        connman->PushMessage(pto, msgMaker.Make(NetMsgType::INV, vInv));
-    }
+    //if (!vInv.empty()) {
+    //    connman->PushMessage(pto, msgMaker.Make(NetMsgType::INV, vInv));
+    //}
 
     // Detect whether we're stalling
     nNow = GetTimeMicros();

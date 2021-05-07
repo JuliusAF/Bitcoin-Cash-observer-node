@@ -1987,9 +1987,10 @@ bool AppInitParameterInteraction(Config &config) {
     // Option to startup with mocktime set (used for regression testing):
     SetMockTime(gArgs.GetArg("-mocktime", 0)); // SetMockTime(0) is a no-op
 
+    /* remove bloom filters
     if (gArgs.GetBoolArg("-peerbloomfilters", DEFAULT_PEERBLOOMFILTERS)) {
         nLocalServices = ServiceFlags(nLocalServices | NODE_BLOOM);
-    }
+    } */
 
     // Signal Bitcoin Cash support.
     // TODO: remove some time after the hardfork when no longer needed

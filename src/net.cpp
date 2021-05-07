@@ -1073,7 +1073,8 @@ void CConnman::AcceptConnection(const ListenSocket &hListenSocket) {
 
     ServiceFlags nodeServices = nLocalServices;
     if (NetPermissions::HasFlag(permissionFlags, PF_BLOOMFILTER)) {
-        nodeServices = static_cast<ServiceFlags>(nodeServices | NODE_BLOOM);
+        LogPrint(BCLog::NET, "CUSTOM: chose to dodge bloom filters\n");
+        //nodeServices = static_cast<ServiceFlags>(nodeServices | NODE_BLOOM);
     }
     CNode *pnode =
         new CNode(id, nodeServices, GetBestHeight(), hSocket, addr,
