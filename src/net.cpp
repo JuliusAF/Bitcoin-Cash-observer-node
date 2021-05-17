@@ -459,7 +459,7 @@ void CNode::CloseSocketDisconnect() {
     fDisconnect = true;
     LOCK(cs_hSocket);
     if (hSocket != INVALID_SOCKET) {
-        LogPrint(BCLog::NET, "disconnecting peer=%d\n", id);
+        LogPrint(BCLog::NET, "disconnecting ip=%s peer=%d\n", addr.ToStringIPPort(), id);
         CloseSocket(hSocket);
     }
 }
@@ -603,8 +603,8 @@ bool CNode::ReceiveMsgBytes(const Config &config, const char *pch,
 
         if (IsOversizedMessage(config, msg)) {
             LogPrint(BCLog::NET,
-                     "Oversized message from peer=%i, disconnecting\n",
-                     GetId());
+                     "Oversized message from ip=%s peer=%i, disconnecting\n",
+                     addr.ToStringIPPort(), GetId());
             return false;
         }
 
@@ -2739,9 +2739,9 @@ CNode::CNode(NodeId idIn, ServiceFlags nLocalServicesIn,
     mapRecvBytesPerMsgCmd[NET_MESSAGE_COMMAND_OTHER] = 0;
 
     if (fLogIPs) {
-        LogPrint(BCLog::NET, "Added connection to %s peer=%d\n", addrName, id);
+        LogPrint(BCLog::NET, "Added connection to ip=%s peer=%d\n", addrName, id);
     } else {
-        LogPrint(BCLog::NET, "Added connection peer=%d\n", id);
+        LogPrint(BCLog::NET, "Added connection to ip=%s peer=%d\n", addrName, id);
     }
 }
 
