@@ -2583,6 +2583,7 @@ static bool ProcessMessage(const Config &config, CNode *pfrom,
                              pfrom->GetId());
                 }
             } else {
+                LogPrint(BCLog::NET, "CUSTOM: got transaction bhash=%s  %s peer=%d with ipaddr=%s\n", inv.ToString(), fAlreadyHave ? "have" : "new", pfrom->GetId(), pfrom->addr.ToStringIPPort());
                 pfrom->AddInventoryKnown(inv);
                 if (fBlocksOnly) {
                     LogPrint(BCLog::NET,
