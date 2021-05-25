@@ -1452,7 +1452,7 @@ static bool AlreadyHave(const CInv &inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main) {
 
 static void RelayTransaction(const CTransaction &tx, CConnman *connman) {
     CInv inv(MSG_TX, tx.GetId());
-    connman->ForEachNode([&inv](CNode *pnode) { pnode->PushInventory(inv); });
+    //connman->ForEachNode([&inv](CNode *pnode) { pnode->PushInventory(inv); });
 }
 
 static void RelayAddress(const CAddress &addr, bool fReachable,
@@ -1604,8 +1604,9 @@ static void ProcessGetBlockData(const Config &config, CNode *pfrom,
             pblock = pblockRead;
         }
         if (inv.type == MSG_BLOCK) {
-            connman->PushMessage(pfrom,
-                                 msgMaker.Make(NetMsgType::BLOCK, *pblock));
+            //connman->PushMessage(pfrom,
+            //                     msgMaker.Make(NetMsgType::BLOCK, *pblock));
+            ;
         } else if (inv.type == MSG_FILTERED_BLOCK) {
             bool sendMerkleBlock = false;
             CMerkleBlock merkleBlock;
@@ -1614,25 +1615,6 @@ static void ProcessGetBlockData(const Config &config, CNode *pfrom,
                 if (pfrom->pfilter) {
                     sendMerkleBlock = true;
                     merkleBlock = CMerkleBlock(*pblock, *pfrom->pfilter);
-                }
-            }
-            if (sendMerkleBlock) {
-                connman->PushMessage(
-                    pfrom, msgMaker.Make(NetMsgType::MERKLEBLOCK, merkleBlock));
-                // CMerkleBlock just contains hashes, so also push any
-                // transactions in the block the client did not see. This avoids
-                // hurting performance by pointlessly requiring a round-trip.
-                // Note that there is currently no way for a node to request any
-                // single transactions we didn't send here - they must either
-                // disconnect and retry or request the full block. Thus, the
-                // protocol spec specified allows for us to provide duplicate
-                // txn here, however we MUST always provide at least what the
-                // remote peer needs.
-                typedef std::pair<size_t, uint256> PairType;
-                for (PairType &pair : merkleBlock.vMatchedTxn) {
-                    connman->PushMessage(
-                        pfrom, msgMaker.Make(NetMsgType::TX,
-                                             *pblock->vtx[pair.first]));
                 }
             }
             // else
@@ -1647,29 +1629,17 @@ static void ProcessGetBlockData(const Config &config, CNode *pfrom,
                 pindex->nHeight >=
                     ::ChainActive().Height() - MAX_CMPCTBLOCK_DEPTH) {
                 CBlockHeaderAndShortTxIDs cmpctblock(*pblock);
-                connman->PushMessage(
-                    pfrom, msgMaker.Make(nSendFlags, NetMsgType::CMPCTBLOCK,
-                                         cmpctblock));
+               // connman->PushMessage(
+                //    pfrom, msgMaker.Make(nSendFlags, NetMsgType::CMPCTBLOCK,
+                //                         cmpctblock));
             } else {
-                connman->PushMessage(
-                    pfrom,
-                    msgMaker.Make(nSendFlags, NetMsgType::BLOCK, *pblock));
+                //connman->PushMessage(
+                //    pfrom,
+                //    msgMaker.Make(nSendFlags, NetMsgType::BLOCK, *pblock));
+                ;
             }
         }
 
-        // Trigger the peer node to send a getblocks request for the next batch
-        // of inventory.
-        if (hash == pfrom->hashContinue) {
-            // Bypass PushInventory, this must send even if redundant, and we
-            // want it right after the last block so they don't wait for other
-            // stuff first.
-            std::vector<CInv> vInv;
-            vInv.emplace_back(
-                MSG_BLOCK, ::ChainActive().Tip()->GetBlockHash());
-            connman->PushMessage(pfrom, msgMaker.Make(NetMsgType::INV, vInv));
-            pfrom->hashContinue = BlockHash();
-        }
-    }
 }
 
 static void ProcessGetData(const Config &config, CNode *pfrom,
@@ -1702,9 +1672,9 @@ static void ProcessGetData(const Config &config, CNode *pfrom,
             auto mi = mapRelay.find(inv.hash);
             int nSendFlags = 0;
             if (mi != mapRelay.end()) {
-                connman->PushMessage(
-                    pfrom,
-                    msgMaker.Make(nSendFlags, NetMsgType::TX, *mi->second));
+                //connman->PushMessage(
+                //    pfrom,
+                //    msgMaker.Make(nSendFlags, NetMsgType::TX, *mi->second));
                 push = true;
             } else if (pfrom->timeLastMempoolReq) {
                 auto txinfo = g_mempool.info(TxId(inv.hash));
@@ -1712,20 +1682,17 @@ static void ProcessGetData(const Config &config, CNode *pfrom,
                 // when that TX couldn't have been INVed in reply to a MEMPOOL
                 // request.
                 if (txinfo.tx && txinfo.nTime <= pfrom->timeLastMempoolReq) {
-                    connman->PushMessage(
-                        pfrom,
-                        msgMaker.Make(nSendFlags, NetMsgType::TX, *txinfo.tx));
+                   // connman->PushMessage(
+                    //    pfrom,
+                    //    msgMaker.Make(nSendFlags, NetMsgType::TX, *txinfo.tx));
                     push = true;
                 }
             } else if (inv.type == MSG_DOUBLESPENDPROOF && DoubleSpendProof::IsEnabled()) {
                 DoubleSpendProof dsp = g_mempool.doubleSpendProofStorage()->lookup(inv.hash);
                 if (!dsp.isEmpty()) {
-                    connman->PushMessage(pfrom, msgMaker.Make(nSendFlags, NetMsgType::DSPROOF, dsp));
+                    //connman->PushMessage(pfrom, msgMaker.Make(nSendFlags, NetMsgType::DSPROOF, dsp));
                     push = true;
                 }
-            }
-            if (!push) {
-                vNotFound.push_back(inv);
             }
         }
     } // release cs_main
@@ -2706,7 +2673,7 @@ static bool ProcessMessage(const Config &config, CNode *pfrom,
                     pindex->nHeight, pindex->GetBlockHash().ToString());
                 break;
             }
-            pfrom->PushInventory(CInv(MSG_BLOCK, pindex->GetBlockHash()));
+            //pfrom->PushInventory(CInv(MSG_BLOCK, pindex->GetBlockHash()));
             if (--nLimit <= 0) {
                 // When this block is requested, we'll send an inv that'll
                 // trigger the peer to getblocks the next batch of inventory.
@@ -4575,12 +4542,6 @@ bool PeerLogicValidation::SendMessages(const Config &config, CNode *pto,
                              ::ChainActive().Tip()->GetBlockHash().ToString());
                 }
 
-                // If the peer's chain has this block, don't inv it back.
-                if (!PeerHasHeader(&state, pindex)) {
-                    pto->PushInventory(CInv(MSG_BLOCK, hashToAnnounce));
-                    LogPrint(BCLog::NET, "%s: sending inv peer=%d hash=%s\n",
-                             __func__, pto->GetId(), hashToAnnounce.ToString());
-                }
             }
         }
         pto->vBlockHashesToAnnounce.clear();
@@ -4748,8 +4709,8 @@ bool PeerLogicValidation::SendMessages(const Config &config, CNode *pto,
                     }
                 }
                 if (vInv.size() == MAX_INV_SZ) {
-                    connman->PushMessage(pto,
-                                         msgMaker.Make(NetMsgType::INV, vInv));
+                    //connman->PushMessage(pto,
+                    //                     msgMaker.Make(NetMsgType::INV, vInv));
                     vInv.clear();
                 }
                 pto->filterInventoryKnown.insert(txid);
@@ -4989,7 +4950,6 @@ void PeerLogicValidation::TransactionDoubleSpent(const CTransactionRef &ptx, con
             if (pnode->pfilter && !pnode->pfilter->IsRelevantAndUpdate(*ptx))
                 return;
         }
-        pnode->PushInventory(inv);
     });
 }
 
