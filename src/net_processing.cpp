@@ -1639,7 +1639,7 @@ static void ProcessGetBlockData(const Config &config, CNode *pfrom,
                 ;
             }
         }
-
+    }
 }
 
 static void ProcessGetData(const Config &config, CNode *pfrom,
