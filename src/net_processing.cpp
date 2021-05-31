@@ -665,19 +665,11 @@ static void MaybeSetPeerAsAnnouncingHeaderAndIDs(NodeId nodeid,
                 lNodesAnnouncingHeaderAndIDs.front(),
                 [&connman](CNode *pnodeStop) {
                     AssertLockHeld(cs_main);
-                    connman->PushMessage(
-                        pnodeStop, CNetMsgMaker(pnodeStop->GetSendVersion())
-                                       .Make(NetMsgType::SENDCMPCT,
-                                             /*fAnnounceUsingCMPCTBLOCK=*/false,
-                                             nCMPCTBLOCKVersion));
+
                     return true;
                 });
             lNodesAnnouncingHeaderAndIDs.pop_front();
         }
-        connman->PushMessage(pfrom, CNetMsgMaker(pfrom->GetSendVersion())
-                                        .Make(NetMsgType::SENDCMPCT,
-                                              /*fAnnounceUsingCMPCTBLOCK=*/true,
-                                              nCMPCTBLOCKVersion));
         lNodesAnnouncingHeaderAndIDs.push_back(pfrom->GetId());
         return true;
     });
@@ -1331,7 +1323,7 @@ void PeerLogicValidation::UpdatedBlockTip(const CBlockIndex *pindexNew,
         std::vector<BlockHash> vHashes;
         const CBlockIndex *pindexToAnnounce = pindexNew;
         while (pindexToAnnounce != pindexFork) {
-            vHashes.push_back(pindexToAnnounce->GetBlockHash());
+            //vHashes.push_back(pindexToAnnounce->GetBlockHash());
             pindexToAnnounce = pindexToAnnounce->pprev;
             if (vHashes.size() == MAX_BLOCKS_TO_ANNOUNCE) {
                 // Limit announcements in case of a huge reorganization. Rely on
@@ -1346,7 +1338,8 @@ void PeerLogicValidation::UpdatedBlockTip(const CBlockIndex *pindexNew,
                                   ? pnode->nStartingHeight - 2000
                                   : 0)) {
                 for (const BlockHash &hash : reverse_iterate(vHashes)) {
-                    pnode->PushBlockHash(hash);
+                    //pnode->PushBlockHash(hash);
+                    ;
                 }
             }
         });
@@ -2813,8 +2806,8 @@ static bool ProcessMessage(const Config &config, CNode *pfrom,
         // in the SendMessages logic.
         nodestate->pindexBestHeaderSent =
             pindex ? pindex : ::ChainActive().Tip();
-        connman->PushMessage(pfrom,
-                             msgMaker.Make(NetMsgType::HEADERS, vHeaders));
+        //connman->PushMessage(pfrom,
+        //                     msgMaker.Make(NetMsgType::HEADERS, vHeaders));
         return true;
     }
 
@@ -4448,7 +4441,8 @@ bool PeerLogicValidation::SendMessages(const Config &config, CNode *pto,
                 pBestIndex = pindex;
                 if (fFoundStartingHeader) {
                     // add this to the headers message
-                    vHeaders.push_back(pindex->GetBlockHeader());
+                    //vHeaders.push_back(pindex->GetBlockHeader());
+                    ;
                 } else if (PeerHasHeader(&state, pindex)) {
                     // Keep looking for the first new block.
                     continue;
@@ -4458,7 +4452,7 @@ bool PeerLogicValidation::SendMessages(const Config &config, CNode *pto,
                     // one.
                     // Start sending headers.
                     fFoundStartingHeader = true;
-                    vHeaders.push_back(pindex->GetBlockHeader());
+                    //vHeaders.push_back(pindex->GetBlockHeader());
                 } else {
                     // Peer doesn't have this header or the prior one --
                     // nothing will connect, so bail out.
@@ -4562,7 +4556,7 @@ bool PeerLogicValidation::SendMessages(const Config &config, CNode *pto,
 
         // Add blocks
         for (const BlockHash &hash : pto->vInventoryBlockToSend) {
-            vInv.emplace_back(MSG_BLOCK, hash);
+            //vInv.emplace_back(MSG_BLOCK, hash);
             if (vInv.size() == MAX_INV_SZ) {
                 //connman->PushMessage(pto, msgMaker.Make(NetMsgType::INV, vInv));
                 vInv.clear();
@@ -4572,7 +4566,7 @@ bool PeerLogicValidation::SendMessages(const Config &config, CNode *pto,
 
         // add generic INVs (such as DSProofs, which will be sent immediately without delay)
         for (const CInv &inv : pto->vInventoryToSend) {
-            vInv.push_back(inv);
+            //vInv.push_back(inv);
             if (vInv.size() == MAX_INV_SZ) {
                 //connman->PushMessage(pto, msgMaker.Make(NetMsgType::INV, vInv));
                 vInv.clear();
@@ -4645,7 +4639,8 @@ bool PeerLogicValidation::SendMessages(const Config &config, CNode *pto,
             for (std::set<TxId>::iterator it =
                      pto->setInventoryTxToSend.begin();
                  it != pto->setInventoryTxToSend.end(); it++) {
-                vInvTx.push_back(it);
+                //vInvTx.push_back(it);
+                ;
             }
             Amount filterrate = Amount::zero();
             {
