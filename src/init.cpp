@@ -1736,6 +1736,8 @@ bool AppInitParameterInteraction(Config &config) {
                               nUserMaxConnections, nMaxConnections));
     }
 
+    InitWarning(strprintf(_("Definitely updated.")));
+
     // Step 3: parameter-to-internal-flags
     if (gArgs.IsArgSet("-debug")) {
         // Special-case: if -debug=0/-nodebug is set, turn off debugging
